@@ -13,6 +13,9 @@ TrimmerWorker::TrimmerWorker()
     this->moveToThread(&thread_);
     connect(&thread_, SIGNAL(started()), this, SLOT(threadFunc()));
     thread_.start();
+
+    connect( &process_, SIGNAL(readyReadStandardError()), this, SLOT(on_readyReadStandardError()) );
+    connect( &process_, SIGNAL(readyReadStandardOutput()), this, SLOT(on_readyReadStandardOutput()) );
 }
 
 void TrimmerWorker::threadFunc()
@@ -289,7 +292,25 @@ void TrimmerWorker::parse_asset_clip(QXmlStreamReader& xmlStream)
 
             emit debug("            " + program + " " + arguments);
 
-            if( system(QString(program + " " + arguments).toStdString().c_str()) != 0 )
+            //if( system(QString(program + " " + arguments).toStdString().c_str()) != 0 )
+            //{
+            //    emit debug("FAILED!");
+            //    errorCount_++;
+            //}
+
+            QStringList sl;
+            sl.append( arguments );
+
+            process_.setProgram( program );
+            process_.setArguments( sl );
+            process_.start();
+
+            while( !process_.waitForFinished() )
+            {
+                ; // do nothing
+            }
+
+            if( process_.exitCode() != 0 )
             {
                 emit debug("FAILED!");
                 errorCount_++;
@@ -652,4 +673,16 @@ float TrimmerWorker::extractTime(QString& str)
     }
 
     return static_cast<float>(numerator/denominator);
+}
+
+void TrimmerWorker::on_readyReadStandardError()
+{
+    QByteArray ba = process_.readAllStandardError();
+    emit debug( QString(ba) );
+}
+
+void TrimmerWorker::on_readyReadStandardOutput()
+{
+    QByteArray ba = process_.readAllStandardError();
+    emit debug( QString(ba) );
 }
