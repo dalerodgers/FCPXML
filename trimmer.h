@@ -47,10 +47,10 @@ private:
     static bool doesFileExist(const QString& fileName);
     static QString resolveFilename(QString src);
     float extractTime(QString& str);
-//    void trim(ClipItem& clipItem);
     void trimAll();
 
-    QProcess process_;
+    QProcess* pProcess_;
+    int runProcess( const QString& processStr );
 
 public slots:
     void go(QString outputFolder, QString fcpxmlFile, bool stripAudio, QString prefix);

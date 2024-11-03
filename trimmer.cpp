@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <QEventLoop>
+#include <assert.h>
 
 static const QString LightworksMediaPath("C:\\Users\\Public\\Documents\\Lightworks\\Media\\Material\\");
 
@@ -13,9 +14,6 @@ TrimmerWorker::TrimmerWorker()
     this->moveToThread(&thread_);
     connect(&thread_, SIGNAL(started()), this, SLOT(threadFunc()));
     thread_.start();
-
-    connect( &process_, SIGNAL(readyReadStandardError()), this, SLOT(on_readyReadStandardError()), Qt::DirectConnection );
-    connect( &process_, SIGNAL(readyReadStandardOutput()), this, SLOT(on_readyReadStandardOutput()), Qt::DirectConnection );
 }
 
 void TrimmerWorker::threadFunc()
@@ -296,15 +294,7 @@ void TrimmerWorker::parse_asset_clip(QXmlStreamReader& xmlStream)
 
             emit debug( "            " + program + " " + arguments + "\n" );
 
-            process_.setProgram( program + " " + arguments );
-            process_.start();
-
-            while( !process_.waitForFinished() )
-            {
-                ; // do nothing
-            }
-
-            if( process_.exitCode() != 0 )
+            if( runProcess( program + " " + arguments ) != 0 )
             {
                 emit debug("FAILED!");
                 errorCount_++;
@@ -409,14 +399,42 @@ float TrimmerWorker::extractTime(QString& str)
 
 void TrimmerWorker::on_readyReadStandardError()
 {
-    QByteArray ba = process_.readAllStandardError();
+    assert( nullptr != pProcess_ );
+
+    QByteArray ba = pProcess_->readAllStandardError();
     emit cerr( QString(ba) );
     QThread::msleep(500);
 }
 
 void TrimmerWorker::on_readyReadStandardOutput()
 {
-    QByteArray ba = process_.readAllStandardOutput();
+    assert( nullptr != pProcess_ );
+
+    QByteArray ba = pProcess_->readAllStandardOutput();
     emit cout( QString(ba) );
     QThread::msleep(500);
+}
+
+int TrimmerWorker::runProcess( const QString& processStr )
+{
+    pProcess_ = new QProcess;
+
+    connect( pProcess_, SIGNAL(readyReadStandardError()), this, SLOT(on_readyReadStandardError()), Qt::DirectConnection );
+    connect( pProcess_, SIGNAL(readyReadStandardOutput()), this, SLOT(on_readyReadStandardOutput()), Qt::DirectConnection );
+
+    pProcess_->setProgram( processStr );
+    pProcess_->start();
+
+    while( !pProcess_->waitForFinished() )
+    {
+        ; // do nothing
+    }
+
+    disconnect( pProcess_, SIGNAL(readyReadStandardError()), this, SLOT(on_readyReadStandardError()) );
+    disconnect( pProcess_, SIGNAL(readyReadStandardOutput()), this, SLOT(on_readyReadStandardOutput()) );
+
+    const int exitCode = pProcess_->exitCode();
+
+    delete pProcess_;
+    return exitCode;
 }
