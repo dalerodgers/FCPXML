@@ -32,6 +32,8 @@ signals:
 public slots:
    void trimFinished();
    void debug(QString str);
+   void cout(QString str);
+   void cerr(QString str);
 };
 
 #endif // MAINWINDOW_H

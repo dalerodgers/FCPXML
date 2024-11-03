@@ -17,9 +17,9 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMainWindow>
-#include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
+#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -33,7 +33,7 @@ public:
     QLineEdit *pathEdfFile;
     QLineEdit *pathOutputFolder;
     QPushButton *buttonGo;
-    QPlainTextEdit *debug;
+    QTextEdit *debug;
     QLineEdit *prefix;
     QRadioButton *stripAudio;
     QLabel *label;
@@ -64,10 +64,9 @@ public:
         buttonGo = new QPushButton(centralWidget);
         buttonGo->setObjectName(QStringLiteral("buttonGo"));
         buttonGo->setGeometry(QRect(10, 370, 141, 51));
-        debug = new QPlainTextEdit(centralWidget);
+        debug = new QTextEdit(centralWidget);
         debug->setObjectName(QStringLiteral("debug"));
         debug->setGeometry(QRect(10, 10, 751, 351));
-        debug->setReadOnly(true);
         prefix = new QLineEdit(centralWidget);
         prefix->setObjectName(QStringLiteral("prefix"));
         prefix->setGeometry(QRect(410, 370, 351, 51));
