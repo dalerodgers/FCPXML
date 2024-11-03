@@ -56,7 +56,23 @@ void MainWindow::trimFinished()
 
 void MainWindow::debug(QString str)
 {
-    ui->debug->appendPlainText(str);
+    ui->debug->setTextColor( Qt::black );
+    ui->debug->append(str);
+    ui->debug->update();
+}
+
+void MainWindow::cerr(QString str)
+{
+    ui->debug->setTextColor( Qt::darkGray );
+    ui->debug->append(str);
+    ui->debug->update();
+}
+
+void MainWindow::cout(QString str)
+{
+    ui->debug->setTextColor( Qt::darkGray );
+    ui->debug->append(str);
+    ui->debug->update();
 }
 
 MainWindow::~MainWindow()

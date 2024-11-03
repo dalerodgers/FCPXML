@@ -14,8 +14,8 @@ TrimmerWorker::TrimmerWorker()
     connect(&thread_, SIGNAL(started()), this, SLOT(threadFunc()));
     thread_.start();
 
-    connect( &process_, SIGNAL(readyReadStandardError()), this, SLOT(on_readyReadStandardError()) );
-    connect( &process_, SIGNAL(readyReadStandardOutput()), this, SLOT(on_readyReadStandardOutput()) );
+    connect( &process_, SIGNAL(readyReadStandardError()), this, SLOT(on_readyReadStandardError()), Qt::DirectConnection );
+    connect( &process_, SIGNAL(readyReadStandardOutput()), this, SLOT(on_readyReadStandardOutput()), Qt::DirectConnection );
 }
 
 void TrimmerWorker::threadFunc()
@@ -87,6 +87,10 @@ void TrimmerWorker::trimAll()
     if( errorCount_ > 0 )
     {
         emit debug("******** There were errors **************");
+    }
+    else
+    {
+        emit debug("Finished");
     }
 
     emit allDone();
@@ -267,8 +271,8 @@ void TrimmerWorker::parse_asset_clip(QXmlStreamReader& xmlStream)
         if( it->src.size() > 0 )
         {
             QFileInfo fileInfo(it->src);
-            QString program("ffmpeg");
-            QString arguments("-i \"" + it->src + "\"");
+            QString program("ffmpeg.exe");
+            QString arguments("-hide_banner -i \"" + it->src + "\"");
             char temp[320];
 
             sprintf(temp, " -y -ss %5.3f -t %5.3f", start_t, duration_t);
@@ -290,19 +294,9 @@ void TrimmerWorker::parse_asset_clip(QXmlStreamReader& xmlStream)
             sprintf(temp, " \"%s/%s%s__%06lld_%06lld.%s\"", outputFolder_.toStdString().c_str(), prefix.toStdString().c_str(), fileInfo.baseName().toStdString().c_str(), (long long int)(start_t*1000000.0f), (long long int)(duration_t*1000000.0f), fileInfo.suffix().toStdString().c_str());
             arguments += temp;
 
-            emit debug("            " + program + " " + arguments);
+            emit debug( "            " + program + " " + arguments + "\n" );
 
-            //if( system(QString(program + " " + arguments).toStdString().c_str()) != 0 )
-            //{
-            //    emit debug("FAILED!");
-            //    errorCount_++;
-            //}
-
-            QStringList sl;
-            sl.append( arguments );
-
-            process_.setProgram( program );
-            process_.setArguments( sl );
+            process_.setProgram( program + " " + arguments );
             process_.start();
 
             while( !process_.waitForFinished() )
@@ -330,195 +324,6 @@ void TrimmerWorker::parse_asset_clip(QXmlStreamReader& xmlStream)
 
     debug("");
 }
-
-//void TrimmerWorker::parse_video(QXmlStreamReader& xmlStream)
-//{
-//    while( xmlStream.readNextStartElement() )
-//    {
-//        if( xmlStream.name() == "track" )
-//        {
-//            parse_track(xmlStream);
-//        }
-//        else
-//        {
-//            xmlStream.skipCurrentElement();
-//        }
-//    }
-//}
-
-//void TrimmerWorker::parse_track(QXmlStreamReader& xmlStream)
-//{
-//    while( xmlStream.readNextStartElement() )
-//    {
-//        if( xmlStream.name() == "clipitem" )
-//        {
-//            parse_clipitem(xmlStream);
-//        }
-//        else
-//        {
-//            xmlStream.skipCurrentElement();
-//        }
-//    }
-//}
-
-//void TrimmerWorker::parse_clipitem(QXmlStreamReader& xmlStream)
-//{
-//     ClipItem clipItem;
-//     clipItem.filey = nullptr;
-
-//     while( xmlStream.readNextStartElement() )
-//     {
-//        if( xmlStream.name() == "name" )
-//        {
-//            clipItem.name = xmlStream.readElementText();
-//        }
-//        else if (xmlStream.name() == "rate" )
-//        {
-//            parse_clipitem_rate(xmlStream, clipItem);
-//        }
-//        else if( xmlStream.name() == "file" )
-//        {
-//            parse_clipitem_file(xmlStream, clipItem);
-//        }
-//        else if( xmlStream.name() == "subclipinfo" )
-//        {
-//            parse_clipitem_subclipinfo(xmlStream, clipItem);
-//        }
-//        else if( xmlStream.name() == "in" )
-//        {
-//            clipItem.file_in = xmlStream.readElementText();
-//        }
-//        else if( xmlStream.name() == "out" )
-//        {
-//            clipItem.file_out = xmlStream.readElementText();
-//        }
-//        else
-//        {
-//            xmlStream.skipCurrentElement();
-//        }
-//    }
-
-//    trim(clipItem);
-//}
-
-//void TrimmerWorker::parse_clipitem_rate(QXmlStreamReader& xmlStream, ClipItem& clipItem)
-//{
-//   while( xmlStream.readNextStartElement() )
-//   {
-//      if( xmlStream.name() == "timebase" )
-//      {
-//          clipItem.timebase = xmlStream.readElementText();
-//      }
-//      else
-//      {
-//          xmlStream.skipCurrentElement();
-//      }
-//  }
-//}
-
-//void TrimmerWorker::parse_clipitem_file(QXmlStreamReader& xmlStream, ClipItem& clipItem)
-//{
-//    File filey;
-//    filey.id = xmlStream.attributes().value("id").toString();
-
-//    while( xmlStream.readNextStartElement() )
-//    {
-//       if( xmlStream.name() == "name" )
-//       {
-//           filey.name = xmlStream.readElementText();
-//       }
-//       else if( xmlStream.name() == "pathurl" )
-//       {
-//           filey.pathurl = xmlStream.readElementText();
-//       }
-//       else if( xmlStream.name() == "rate" )
-//       {
-//           parse_clipitem_file_rate(xmlStream, filey);
-//       }
-//       else
-//       {
-//           xmlStream.skipCurrentElement();
-//       }
-//   }
-
-//    if( filey.id.size() > 0 )
-//    {
-//        if( (filey.name.size() == 0) || (filey.pathurl.size() == 0) || (filey.timebase.size() == 0) )
-//        {
-//            // this looks like a reference to a master clip - try and link it
-//            QMap<QString, File>::iterator it = fileMap.find(filey.id);
-
-//            if( it != fileMap.end() )
-//            {
-//                clipItem.filey = &(*it);
-//            }
-//            else
-//            {
-//                emit debug("*********** NO MASTER CLIP REFERENCE IN FILE MAP ***************");
-//            }
-//        }
-//        else
-//        {
-//            // this looks like a master clip .................................
-//            QMap<QString, File>::iterator it = fileMap.find(filey.id);
-
-//            if( it != fileMap.end() )
-//            {
-//                // this master clip is already described, find and check
-//                if( (it->name != filey.name) || (it->pathurl != filey.pathurl) || (it->timebase != filey.timebase))
-//                {
-//                    emit debug("*********** DUPLICATE IN FILE MAP ***************");
-//                }
-
-//                // link this clip item to existing good master clip
-//                clipItem.filey = &(*it);
-//            }
-//            else
-//            {
-//                // master clip not in map, add and link it
-//                fileMap[filey.id] = filey;
-//                it = fileMap.find(filey.id);
-//                clipItem.filey = &(*it);
-//            }
-//        }
-//    }
-
-//    resolveFilename(clipItem);
-//}
-
-//void TrimmerWorker::parse_clipitem_file_rate(QXmlStreamReader& xmlStream, File& filey)
-//{
-//   while( xmlStream.readNextStartElement() )
-//   {
-//      if( xmlStream.name() == "timebase" )
-//      {
-//          filey.timebase = xmlStream.readElementText();
-//      }
-//      else
-//      {
-//          xmlStream.skipCurrentElement();
-//      }
-//  }
-//}
-
-//void TrimmerWorker::parse_clipitem_subclipinfo(QXmlStreamReader& xmlStream, ClipItem& clipItem)
-//{
-//    while( xmlStream.readNextStartElement() )
-//    {
-//       if( xmlStream.name() == "startoffset" )
-//       {
-//           clipItem.file_subclipinfo_startoffset = xmlStream.readElementText();
-//       }
-//       else if( xmlStream.name() == "endoffset" )
-//       {
-//           clipItem.file_subclipinfo_endoffset = xmlStream.readElementText();
-//       }
-//       else
-//       {
-//           xmlStream.skipCurrentElement();
-//       }
-//   }
-//}
 
 bool TrimmerWorker::doesFileExist(const QString& fileName)
 {
@@ -564,79 +369,6 @@ QString TrimmerWorker::resolveFilename(QString src)
     return foundPath;
 }
 
-//void TrimmerWorker::trim(ClipItem& clipItem)
-//{
-//    emit debug("");
-//    emit debug("    Clip Item: " + clipItem.name);
-
-//    if( nullptr == clipItem.filey )
-//    {
-//        emit debug("      ERROR: Filey nullptr!");
-//        errorCount_++;
-//    }
-//    else
-//    {
-//        int timebase = clipItem.timebase.toInt(); //clipItem.filey->timebase.toInt();
-
-//        emit debug("      File Id: " + clipItem.filey->id);
-//        emit debug("      File Name: " + clipItem.filey->name);
-//        emit debug("      File URL: " + clipItem.filey->pathurl);
-//        emit debug("      File Timebase:  " + clipItem.filey->timebase + "fps (Clip Timebase: " + clipItem.timebase + "fps)");
-//        emit debug("      File In:  " + clipItem.file_in + " frames");
-//        emit debug("      File Out:  " + clipItem.file_out + " frames");
-//        emit debug("      File Subclip Start:  " + clipItem.file_subclipinfo_startoffset + " frames");
-//        emit debug("      File Subclip End:  " + clipItem.file_subclipinfo_endoffset + " frames");
-
-//        if( clipItem.filey->timebase != clipItem.timebase )
-//        {
-//            emit debug("      ERROR: Frame rates don't match!");
-//            errorCount_++;
-//        }
-
-//        qint32 startFrame = clipItem.file_subclipinfo_startoffset.toInt() + clipItem.file_in.toInt();
-//        qint32 endFrame = clipItem.file_subclipinfo_startoffset.toInt() + clipItem.file_out.toInt();
-//        float startSecs = static_cast<float>(startFrame) / static_cast<float>(timebase);
-//        float endSecs = static_cast<float>(endFrame) / static_cast<float>(timebase);
-//        float durationSecs = endSecs - startSecs;
-
-//        if( clipItem.filey->pathurl.size() > 0 )
-//        {
-//            QFileInfo fileInfo(clipItem.filey->pathurl);
-//            QString program("ffmpeg");
-//            QString arguments("-i \"" + clipItem.filey->pathurl + "\"");
-//            char temp[320];
-
-//            sprintf(temp, " -y -ss %5.3f -t %5.3f", startSecs, durationSecs);
-//            arguments += temp;
-//            arguments += " -vcodec copy";
-
-//            if( stripAudio_ )
-//            {
-//                arguments += " -an";
-//            }
-//            else
-//            {
-//                arguments += " -acodec copy";
-//            }
-
-//            QString prefix(prefix_);
-//            if( prefix.size() > 0 ) prefix += "_";
-
-//            sprintf(temp, " \"%s/%s%s__%06d_%06d.%s\"", outputFolder_.toStdString().c_str(), prefix.toStdString().c_str(), fileInfo.baseName().toStdString().c_str(), startFrame, endFrame, fileInfo.suffix().toStdString().c_str());
-//            arguments += temp;
-
-//            emit debug("");
-//            emit debug("      Calling: " + program + " " + arguments);
-
-//            if( system(QString(program + " " + arguments).toStdString().c_str()) != 0 )
-//            {
-//                emit debug("FAILED!");
-//                errorCount_++;
-//            }
-//        }
-//    }
-//}
-
 float TrimmerWorker::extractTime(QString& str)
 {
     double numerator = 0.0;
@@ -678,11 +410,13 @@ float TrimmerWorker::extractTime(QString& str)
 void TrimmerWorker::on_readyReadStandardError()
 {
     QByteArray ba = process_.readAllStandardError();
-    emit debug( QString(ba) );
+    emit cerr( QString(ba) );
+    QThread::msleep(500);
 }
 
 void TrimmerWorker::on_readyReadStandardOutput()
 {
-    QByteArray ba = process_.readAllStandardError();
-    emit debug( QString(ba) );
+    QByteArray ba = process_.readAllStandardOutput();
+    emit cout( QString(ba) );
+    QThread::msleep(500);
 }

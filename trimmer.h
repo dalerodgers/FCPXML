@@ -6,36 +6,17 @@
 #include <QXmlStreamReader>
 #include <QMap>
 #include <QThread>
+#include <QProcess>
 
 class TrimmerWorker : public QObject
 {
     Q_OBJECT
 
 public:
-    TrimmerWorker();
+    TrimmerWorker( );
     ~TrimmerWorker();
 
 private:
-//    struct File
-//    {
-//        QString id;
-//        QString name;
-//        QString pathurl;
-//        QString timebase;
-//    };
-
-//    struct ClipItem
-//    {
-//       QString name;
-//       QString timebase;
-//       QString file_in;
-//       QString file_out;
-//       QString file_subclipinfo_startoffset;
-//       QString file_subclipinfo_endoffset;
-
-//       File* filey;
-//    };
-
     struct Asset
     {
         QString src;
@@ -62,13 +43,6 @@ private:
     void parse_sequence(QXmlStreamReader& xmlStream);
     void parse_spine(QXmlStreamReader& xmlStream);
     void parse_asset_clip(QXmlStreamReader& xmlStream);
-//    void parse_video(QXmlStreamReader& xmlStream);
-//    void parse_track(QXmlStreamReader& xmlStream);
-//    void parse_clipitem(QXmlStreamReader& xmlStream);
-//    void parse_clipitem_rate(QXmlStreamReader& xmlStream, ClipItem& clipItem);
-//    void parse_clipitem_file(QXmlStreamReader& xmlStream, ClipItem& clipItem);
-//    void parse_clipitem_file_rate(QXmlStreamReader& xmlStream, File& filey);
-//    void parse_clipitem_subclipinfo(QXmlStreamReader& xmlStream, ClipItem& clipItem);
 
     static bool doesFileExist(const QString& fileName);
     static QString resolveFilename(QString src);
@@ -76,14 +50,22 @@ private:
 //    void trim(ClipItem& clipItem);
     void trimAll();
 
+    QProcess process_;
+
 public slots:
     void go(QString outputFolder, QString fcpxmlFile, bool stripAudio, QString prefix);
+
+    void on_readyReadStandardError();
+    void on_readyReadStandardOutput();
 
 private slots:
     void threadFunc();
 
 signals:
     void debug(const QString str);
+    void cout(const QString str);
+    void cerr(const QString str);
+
     void allDone();
     void gogo();
 };
